@@ -2,13 +2,14 @@
 
 **See every price change in your Amazon Cart at a glance — sorted, in one table.**
 
-CartLens is a free, open-source Chrome extension (Manifest V3) that turns
-Amazon's buried "Important messages for items in your Cart" price-change
-notices into a clean, sortable price comparison table: product name (linked),
-old price, new price, and percent change — so the best price drops (and the
-sneaky price increases) jump out immediately. No sign-up, no price-tracking
-account, no external service — it just reads the cart page you already have
-open.
+CartLens is a free, open-source Chrome extension (Manifest V3) that tracks the
+price of every item in your Amazon Cart — including Saved-for-Later — and shows
+it in a clean, sortable price comparison table: product thumbnail and name
+(linked), previous price, current price, and percent change — so the best price
+drops (and the sneaky price increases) jump out immediately. It remembers prices
+between visits, so it builds each item's price history for you over time. No
+sign-up, no price-tracking account, no external service — it just reads the cart
+page you already have open and stores history locally in your browser.
 
 ![CartLens screenshot: a sortable table of Amazon cart items showing old price, new price, and percent change](docs/screenshot.png)
 
@@ -16,15 +17,25 @@ open.
 
 - **Fully automatic** — the table appears as soon as you load your Amazon Cart
   page. No click required.
-- **Sortable columns** — click any header (Product, Old Price, New Price, %
-  Change) to sort ascending/descending.
+- **Tracks Cart *and* Saved-for-Later** — every item with a price shows up, each
+  tagged with its section.
+- **Price history over time** — CartLens records prices between visits, so it
+  builds a running history for each item even if Amazon shows no change notice.
+  Click any row to expand its full price history with timestamps.
+- **Product thumbnails** — each row shows the item's image for quick recognition.
+- **Sortable columns** — click any header (Product, Section, Prev Price, Current
+  Price, % Change) to sort ascending/descending.
 - **Sorted by biggest change first** — by default, items are ranked by percent
   change so the largest price drops surface immediately.
-- **Color-coded** — price drops in green, increases in red.
+- **Color-coded** — price drops in green, increases in red, unchanged dimmed.
+- **Collapsible** — click the heading to collapse the whole table out of the way.
+- **Per-item clear** — dismiss any item to drop it (and its stored history) from
+  the table.
 - **Works across Amazon storefronts** — .com, .in, .co.uk, .de, .ca, .fr, .it,
   .es, .co.jp, .com.au, .com.mx, .com.br, .nl, .se, .pl, .sg, .ae, .sa.
-- **Private by design** — runs entirely client-side. No data leaves your
-  browser, no analytics, no external requests.
+- **Private by design** — runs entirely client-side. History is stored only in
+  your browser's local storage. No data leaves your browser, no analytics, no
+  external requests.
 
 ## Installation
 
@@ -44,14 +55,19 @@ _(coming soon — link will go here once published)_
 
 ## How it works
 
-CartLens is a Manifest V3 content script. It looks for Amazon's
-`single-imb-message` price-change notices in the cart page DOM, parses the
-product link, old price, and new price out of each one, computes the percent
-change, and renders a table in their place. A `MutationObserver` re-renders
-the table if Amazon updates the cart asynchronously.
+CartLens is a Manifest V3 content script. On each cart page it scrapes every
+active and saved-for-later line item using Amazon's own `data-asin` /
+`data-price` attributes (more reliable than the visible price spans), reading
+the product link, image, and current price for each. It merges those prices into
+a per-item history kept in `chrome.storage.local`, appending a new point only
+when a price actually changes (capped at 50 points per item). Each row's
+previous vs. current price gives the percent change, and the table is rendered
+above Amazon's existing cart content. A debounced `MutationObserver` re-renders
+when Amazon updates the cart asynchronously (e.g. as Saved-for-Later lazy-loads
+on scroll).
 
 No network requests, no remote code, no tracking — everything happens in the
-page you already have open.
+page you already have open, and history never leaves your browser.
 
 ## Contributing
 
@@ -64,10 +80,11 @@ personal data first).
 
 ## Privacy
 
-CartLens requests `activeTab` and `scripting` permissions and host permissions
-scoped to Amazon cart pages only. It does not collect, store, or transmit any
-data. See [PRIVACY.md](PRIVACY.md) for the full policy (required for Chrome
-Web Store listing).
+CartLens requests `activeTab`, `scripting`, and `storage` permissions, plus host
+permissions scoped to Amazon cart pages only. Price history is stored locally via
+`chrome.storage.local` and never transmitted anywhere. It does not collect or
+transmit any data. See [PRIVACY.md](PRIVACY.md) for the full policy (required for
+Chrome Web Store listing).
 
 ## License
 

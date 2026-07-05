@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CartLens – Amazon Cart Price Changes",
   "version": "1.0.0",
-  "description": "Automatically turns Amazon's cart price-change notices into a clean, sortable table so you can spot the best drops at a glance.",
+  "description": "Tracks the price of every item in your Amazon cart and Saved-for-Later in a clean, sortable table with price history, so you spot the best drops at a glance.",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "*://*.amazon.com/*",

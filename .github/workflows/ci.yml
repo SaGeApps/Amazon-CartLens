@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest.json is well-formed
+        run: python3 -m json.tool cartlens/manifest.json > /dev/null
+
+      - name: Check required extension files exist
+        run: |
+          test -f cartlens/manifest.json
+          test -f cartlens/content.js
+          test -f cartlens/inject.css
+          test -f cartlens/popup.html
+          test -f cartlens/popup.js
+          test -f cartlens/popup.css
+          test -f cartlens/icon16.png
+          test -f cartlens/icon48.png
+          test -f cartlens/icon128.png
+
+      - name: Lint JS with Node's built-in syntax check
+        run: |
+          node --check cartlens/content.js
+          node --check cartlens/popup.js

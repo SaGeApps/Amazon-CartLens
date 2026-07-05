@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "CartLens – Amazon Cart Price Changes",
+  "version": "1.0.0",
+  "description": "Automatically turns Amazon's cart price-change notices into a clean, sortable table so you can spot the best drops at a glance.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "*://*.amazon.com/*",
+    "*://*.amazon.in/*",
+    "*://*.amazon.co.uk/*",
+    "*://*.amazon.ca/*",
+    "*://*.amazon.de/*",
+    "*://*.amazon.fr/*",
+    "*://*.amazon.it/*",
+    "*://*.amazon.es/*",
+    "*://*.amazon.co.jp/*",
+    "*://*.amazon.com.au/*",
+    "*://*.amazon.com.mx/*",
+    "*://*.amazon.com.br/*",
+    "*://*.amazon.nl/*",
+    "*://*.amazon.se/*",
+    "*://*.amazon.pl/*",
+    "*://*.amazon.sg/*",
+    "*://*.amazon.ae/*",
+    "*://*.amazon.sa/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.com/gp/cart/*",
+        "*://*.amazon.in/gp/cart/*",
+        "*://*.amazon.co.uk/gp/cart/*",
+        "*://*.amazon.ca/gp/cart/*",
+        "*://*.amazon.de/gp/cart/*",
+        "*://*.amazon.fr/gp/cart/*",
+        "*://*.amazon.it/gp/cart/*",
+        "*://*.amazon.es/gp/cart/*",
+        "*://*.amazon.co.jp/gp/cart/*",
+        "*://*.amazon.com.au/gp/cart/*",
+        "*://*.amazon.com.mx/gp/cart/*",
+        "*://*.amazon.com.br/gp/cart/*",
+        "*://*.amazon.nl/gp/cart/*",
+        "*://*.amazon.se/gp/cart/*",
+        "*://*.amazon.pl/gp/cart/*",
+        "*://*.amazon.sg/gp/cart/*",
+        "*://*.amazon.ae/gp/cart/*",
+        "*://*.amazon.sa/gp/cart/*"
+      ],
+      "js": ["content.js"],
+      "css": ["inject.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CartLens"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

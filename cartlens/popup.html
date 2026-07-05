@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cart Price Changes</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Cart Price Changes</h1>
+    <button id="refresh">Refresh</button>
+  </div>
+  <div id="status"></div>
+  <table id="price-table">
+    <thead>
+      <tr>
+        <th data-key="name">Product</th>
+        <th data-key="oldPrice">Old Price</th>
+        <th data-key="newPrice">New Price</th>
+        <th data-key="percentChange">% Change</th>
+      </tr>
+    </thead>
+    <tbody id="price-table-body"></tbody>
+  </table>
+  <script src="popup.js"></script>
+</body>
+</html>

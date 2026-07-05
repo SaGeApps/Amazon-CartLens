@@ -1,0 +1,14 @@
+# Personal Amazon cart snapshots used for local testing — contain real account data, never commit
+cartPage*.html
+
+# OS / editor cruft
+.DS_Store
+*.log
+.claude/
+
+# Build artifacts
+*.zip
+/dist/
+
+# Node (only used for local test scripts, not part of the extension)
+node_modules/

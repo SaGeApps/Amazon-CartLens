@@ -1,14 +1,16 @@
-# CartLens
+# CartLens — Amazon Cart Price Tracker & Price Drop Alert Extension
 
 **See every price change in your Amazon Cart at a glance — sorted, in one table.**
 
-Amazon buries price-change notices in a wall of text under "Important messages
-for items in your Cart." CartLens reads that section automatically and
-replaces it with a clean, sortable table: product name (linked), old price,
-new price, and percent change — so the best drops (and the sneaky increases)
-jump out immediately.
+CartLens is a free, open-source Chrome extension (Manifest V3) that turns
+Amazon's buried "Important messages for items in your Cart" price-change
+notices into a clean, sortable price comparison table: product name (linked),
+old price, new price, and percent change — so the best price drops (and the
+sneaky price increases) jump out immediately. No sign-up, no price-tracking
+account, no external service — it just reads the cart page you already have
+open.
 
-![CartLens screenshot](docs/screenshot.png)
+![CartLens screenshot: a sortable table of Amazon cart items showing old price, new price, and percent change](docs/screenshot.png)
 
 ## Features
 
@@ -70,3 +72,10 @@ Web Store listing).
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<sub>Keywords: Amazon price tracker, Amazon cart price drop, price change
+notification extension, Amazon price history, price drop alert, Amazon price
+comparison table, browser extension for Amazon shopping, camelcamelcamel
+alternative, Amazon deal finder, sortable price table.</sub>

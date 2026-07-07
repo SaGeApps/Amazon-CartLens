@@ -61,6 +61,52 @@
     return results;
   }
 
+  // Scrape Amazon's own "Important messages for items in your Cart" alert banner.
+  // Each price-change notice is authoritative: it states the old AND new price of
+  // an item directly, so we can show a real % change on the very first visit —
+  // before we have any stored history to diff against. It also covers Saved
+  // Items that may not yet be rendered in the cart DOM.
+  function scrapeBannerChanges() {
+    const results = [];
+    const seen = new Set();
+    // NB: Amazon reuses/duplicates the element id across notices, so we key off
+    // data-feature-id instead of getElementById.
+    const nodes = document.querySelectorAll('[data-feature-id="single-imb-message"]');
+
+    nodes.forEach((el) => {
+      // The change direction lives in a sibling hidden input just before the span.
+      const typeInput = el.parentNode?.querySelector('input[name="imb-type"]');
+      const imbType = typeInput ? typeInput.value : "";
+      // Only price changes carry old/new prices; skip itemNotBuyable, etc.
+      if (imbType !== "priceDecrease" && imbType !== "priceIncrease") return;
+
+      const linkEl = el.querySelector("a[href*='/gp/product/'], a[href*='/dp/']");
+      if (!linkEl) return;
+      const href = linkEl.getAttribute("href") || "";
+      const asinMatch = href.match(/\/(?:gp\/product|dp)\/([A-Z0-9]{10})/i);
+      const asin = asinMatch ? asinMatch[1].toUpperCase() : null;
+      if (!asin) return;
+
+      // Two price spans in DOM order: old price first, new price second.
+      const priceEls = el.querySelectorAll(".sc-product-price");
+      if (priceEls.length < 2) return;
+      const oldPrice = parsePrice(priceEls[0].textContent);
+      const newPrice = parsePrice(priceEls[priceEls.length - 1].textContent);
+      if (oldPrice == null || newPrice == null) return;
+
+      if (seen.has(asin)) return; // first notice per asin wins
+      seen.add(asin);
+
+      const titleEl = linkEl.querySelector(".sc-product-title");
+      const name = titleEl ? titleEl.textContent.trim().replace(/\s+/g, " ") : asin;
+      const url = new URL(href, window.location.origin).href;
+
+      results.push({ asin, name, url, oldPrice, newPrice });
+    });
+
+    return results;
+  }
+
   function readHistory() {
     return new Promise((resolve) => {
       try {
@@ -103,17 +149,30 @@
   // stored items and currently-scraped items, so items that were seen before but
   // aren't in the DOM yet (Saved-for-Later lazy-loads as you scroll) stay in the
   // table instead of disappearing.
-  function mergeHistory(items, store) {
+  function mergeHistory(items, store, bannerChanges) {
     const now = Date.now();
     const present = new Map(items.map((it) => [it.asin, it]));
+    const banners = new Map((bannerChanges || []).map((b) => [b.asin, b]));
 
     // 1) Fold the current scrape into storage.
     items.forEach((item) => {
       if (dismissedAsins.has(item.asin)) return; // user cleared it this session
       const prev = store[item.asin];
       const history = prev && Array.isArray(prev.history) ? prev.history.slice() : [];
-      const last = history.length ? history[history.length - 1] : null;
 
+      // If Amazon's banner reports this item's old price and we have no prior
+      // history to compare against, seed the pre-change price first so the very
+      // first visit shows a real % change instead of "—".
+      const banner = banners.get(item.asin);
+      if (
+        banner &&
+        history.length === 0 &&
+        banner.oldPrice !== banner.newPrice
+      ) {
+        history.push({ price: banner.oldPrice, t: now, source: "banner" });
+      }
+
+      const last = history.length ? history[history.length - 1] : null;
       if (!last || last.price !== item.currentPrice) {
         history.push({ price: item.currentPrice, t: now });
         if (history.length > MAX_HISTORY) history.splice(0, history.length - MAX_HISTORY);
@@ -129,7 +188,35 @@
       };
     });
 
-    // 2) Build rows from everything we know about (union of stored + present).
+    // 2) Fold banner-only changes into storage. These cover items called out by
+    // Amazon that aren't in the cart DOM yet (e.g. collapsed Saved Items), so we
+    // still record their old→new transition and surface them in the table.
+    banners.forEach((banner, asin) => {
+      if (dismissedAsins.has(asin)) return;
+      if (present.has(asin)) return; // already handled by the scrape pass above
+      const prev = store[asin];
+      const history = prev && Array.isArray(prev.history) ? prev.history.slice() : [];
+
+      if (history.length === 0 && banner.oldPrice !== banner.newPrice) {
+        history.push({ price: banner.oldPrice, t: now, source: "banner" });
+      }
+      const last = history.length ? history[history.length - 1] : null;
+      if (!last || last.price !== banner.newPrice) {
+        history.push({ price: banner.newPrice, t: now, source: "banner" });
+        if (history.length > MAX_HISTORY) history.splice(0, history.length - MAX_HISTORY);
+      }
+
+      store[asin] = {
+        name: banner.name || (prev && prev.name) || asin,
+        url: banner.url || (prev && prev.url) || null,
+        image: (prev && prev.image) || null,
+        section: (prev && prev.section) || "saved",
+        history,
+        lastSeen: now,
+      };
+    });
+
+    // 3) Build rows from everything we know about (union of stored + present).
     const rows = [];
     Object.keys(store).forEach((asin) => {
       const rec = store[asin];
@@ -418,29 +505,33 @@
   }
 
   // Signature of the current scrape so we skip redundant storage writes/renders.
-  function signatureOf(items) {
-    return items
-      .map((i) => `${i.section}:${i.asin}:${i.currentPrice}`)
-      .sort()
-      .join("|");
+  // Includes banner notices so a price change announced only in the alert banner
+  // still triggers a re-render.
+  function signatureOf(items, bannerChanges) {
+    const itemSig = items.map((i) => `${i.section}:${i.asin}:${i.currentPrice}`);
+    const bannerSig = (bannerChanges || []).map(
+      (b) => `b:${b.asin}:${b.oldPrice}>${b.newPrice}`
+    );
+    return itemSig.concat(bannerSig).sort().join("|");
   }
 
   async function tryRender() {
     const items = scrapeCartItems();
+    const bannerChanges = scrapeBannerChanges();
 
-    if (items.length === 0) {
+    if (items.length === 0 && bannerChanges.length === 0) {
       const existing = document.getElementById(CONTAINER_ID);
       if (existing) existing.remove();
       lastSignature = "";
       return;
     }
 
-    const sig = signatureOf(items);
+    const sig = signatureOf(items, bannerChanges);
     if (sig === lastSignature && document.getElementById(CONTAINER_ID)) return;
     lastSignature = sig;
 
     const store = await readHistory();
-    const rows = mergeHistory(items, store);
+    const rows = mergeHistory(items, store, bannerChanges);
     await writeHistory(store);
     latestRows = rows;
     renderTable(rows);
